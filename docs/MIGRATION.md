@@ -45,7 +45,7 @@
 
 以下均在新 Windows 的本地桌面、普通用户 Windows PowerShell 5.1 中操作；不要在 SSH、远程桌面或后台服务会话中采集／控制显示。部署路径使用目标电脑的用户环境变量。
 
-1. 创建 `%LOCALAPPDATA%\DisplayHandoff`，把 `windows/DisplayHandoff.ps1` 和 `windows/DisplayNative.cs` 放进去。
+1. 创建 `%LOCALAPPDATA%\DisplayHandoff`，把 `windows/DisplayHandoff.ps1`、`windows/DisplayNative.cs`、`windows/DisplayHandoffLauncher.cs`、`windows/Start-Worker.ps1` 和 `windows/Build-Launcher.ps1` 放进去。
 2. 此时保持 Windows 已经扩展到左右两屏，右屏显示 Windows。
 3. 在同一个 Windows PowerShell 窗口执行下面的采集步骤。它只读取当前显示器信息并保存到文件，不改变显示设置。已有 `display-layout.json` 时先备份，再决定是否重新采集。
 
@@ -118,35 +118,43 @@ powershell.exe -NoLogo -NoProfile -File .\MediaProbe.ps1
 
 ## 5. 先验证，再设登录启动
 
-在新 Windows 的本地桌面先前台运行：
+在新 Windows 的本地桌面，用 Windows PowerShell 5.1 编译一次无控制台启动器：
 
 ```powershell
-& (Join-Path $env:LOCALAPPDATA 'DisplayHandoff\DisplayHandoff.ps1') -Mode Run
+& (Join-Path $env:LOCALAPPDATA 'DisplayHandoff\Build-Launcher.ps1')
 ```
 
-依次确认：
+编译完成后可以关闭该 PowerShell。在文件资源管理器中打开 `%LOCALAPPDATA%\DisplayHandoff`，双击生成的 `DisplayHandoffLauncher.exe`。它启动助手并显示托盘入口，不显示控制台窗口。依次确认：
 
 - 音乐键：Windows 左右扩展，窗口能拖到右侧，键鼠留在 Windows。
 - 邮件键：右屏恢复 Mac，Windows 只保留左屏，键鼠可操作 Mac。
 - 通过上述两种状态各再试一次，确认双向触发都能到达。
 - Mac 的 Ctrl 复制／粘贴、文字导航和终端排除仍符合预期。
+- 打开再关闭一个普通 PowerShell 窗口后，两键仍然有效。
 
 
 测试通过后，用 Windows“任务计划程序”为当前用户创建 `DisplayHandoff` 任务：
 
 - 触发：当前用户登录时。
 - 仅当该用户已登录时运行，普通权限，不勾选最高权限。
-- 程序：`C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe`。
-- 参数：`-NoLogo -NoProfile -WindowStyle Hidden -File "C:\Users\NEW_USER\AppData\Local\DisplayHandoff\DisplayHandoff.ps1" -Mode Run`，替换实际路径。
+- 程序：`C:\Users\NEW_USER\AppData\Local\DisplayHandoff\DisplayHandoffLauncher.exe`，替换实际路径。
+- 参数：留空。“起始于”填写助手目录。
 - 取消任务运行时限；如需电池下使用，也取消“仅交流电源下运行”相关限制。
-- 确认 Windows Deskflow 和 Mac Deskflow／Hammerspoon 都按各自设置登录启动。先退出前台测试助手，再启动正式任务。
+- 任务失败时每隔 1 分钟重启，最多尝试 3 次；已有实例运行时不启动新实例。
+- 确认 Windows Deskflow 和 Mac Deskflow／Hammerspoon 都按各自设置登录启动。先退出托盘测试助手，再启动正式任务。
+
+正式登录任务必须运行启动器，而不是把 `DisplayHandoff.ps1` 长期放在一个普通 PowerShell 窗口里。单纯使用 `-WindowStyle Hidden` 只改变窗口显示方式；启动器重定向标准流，使用 `UseShellExecute=false` 与 `CreateNoWindow=true` 创建工作进程，再由 `Start-Worker.ps1` 在载入控制器前显式解除控制台关联。启动器等待工作进程退出，让任务计划程序能在失败时重试；同时通过 Windows Job Object 清理随启动器结束的工作进程，避免孤立实例。机制参见微软的 [CreateNoWindow](https://learn.microsoft.com/en-us/dotnet/api/system.diagnostics.processstartinfo.createnowindow?view=netframework-4.8.1) 与 [控制台关闭信号](https://learn.microsoft.com/en-us/windows/console/ctrl-close-signal) 说明。
 
 如果系统执行策略拒绝脚本，按该电脑允许的签名／执行策略处理；本说明不要求关闭全机策略。辅助程序在登录后的物理桌面运行，不需要 SSH 常驻、管理员常驻或保存密码。
+
+更新已安装的启动器时，先从托盘退出助手并停止登录任务，再运行编译脚本，避免覆盖正在使用的可执行文件；完成后重新运行登录任务。
 
 ## 恢复与排查
 
 配置前保留新机器自己的 Deskflow 备份。撤销时退出托盘助手、删除新建的登录任务，退出 Deskflow 后恢复新机器的备份，再启动 Deskflow；显示器输入源和 Windows 单屏／双屏先用各自菜单恢复。不要运行旧电脑的恢复脚本或使用旧电脑的备份覆盖新电脑。
 
 新助手目录中 `controller-state.json` 显示当前阶段／错误，`controller-log.jsonl` 记录模式切换结果。若能切画面但键鼠没切换，核对 Deskflow 名称、连接状态、F22／F23 配置和锁定设置；若画面没切换，先查 DDC；若 Windows 仍有隐藏扩展屏，核对新布局文件和显卡驱动。
+
+如果功能键恢复为打开音乐／邮件应用，通常是助手已经停止。先检查任务计划程序中的 `DisplayHandoff` 是否运行，使用“运行”恢复，并确认任务动作指向启动器。`launcher.log` 记录工作进程的启动与退出结果，仅留本机。主动从托盘退出、结束任务或注销时不应当作普通窗口关闭；需要再次使用时重新运行任务。
 
 两键完整切换已在一套双主机环境中实测；迁移到另一套硬件后需要重新验证。更换显卡驱动、接口或电脑后应重做布局核对。

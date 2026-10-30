@@ -23,6 +23,7 @@
 - **键鼠联动**：通过 Deskflow 的内部控制快捷键切换目标电脑，Windows 双屏模式下锁定键鼠，返回 Mac 时解除锁定。
 - **双向触发**：按键由连接实体键盘的 Windows 处理，右屏显示哪台电脑都能发起切换。
 - **托盘备用入口**：提供两种模式的菜单、执行状态和失败提示；按住功能键不会重复触发。
+- **独立后台启动**：使用没有控制台窗口的启动器，配合登录任务运行；关闭普通 PowerShell 窗口不影响助手，任务可配置异常退出后重试。
 - **Mac Ctrl 别名**：常用 Ctrl 复制、粘贴、撤销、保存、查找等转为对应 Command 组合，提供按词移动／选择和文字编辑增强。
 - **终端排除**：macOS“终端”和 iTerm 保持原快捷键；`Ctrl+Alt+Shift+P` 可暂停／恢复 Mac 映射。
 - **本机运行**：助手没有新增网络监听接口；日常运行无需 SSH 常驻。
@@ -33,7 +34,7 @@
 |---|---|---|---|
 | [Deskflow](https://github.com/deskflow/deskflow/releases/tag/v1.27.0) | Windows 和 Mac | 共用键鼠、剪贴板及切换键鼠目标 | 是；本配置验证版本为 1.27.0 |
 | [Hammerspoon](https://www.hammerspoon.org/go/) | Mac | 运行 `mac/deskflow_keys.lua`，实现 Ctrl 别名、文字导航和终端排除 | 使用 Mac 快捷键模块时需要 |
-| Windows PowerShell 5.1、.NET Framework／Windows Forms | Windows | 运行显示切换助手，调用 Windows 显示与 DDC 接口 | Windows 自带组件，无须另装 Python 或 Visual Studio |
+| Windows PowerShell 5.1、.NET Framework／Windows Forms 及其 C# 编译器 | Windows | 编译无控制台启动器、运行显示切换助手、调用显示与 DDC 接口 | Windows 自带组件；按说明使用系统编译器，无须另装 Python 或 Visual Studio |
 | 本仓库 Windows 助手 | Windows | 监听两键、切输入源、改变单双屏布局、联动 Deskflow | 按迁移说明部署源码 |
 
 Hammerspoon 需要在 Mac 上授权“辅助功能”，Deskflow 按其官方引导完成系统权限与两端配对。这里沿用原版 Deskflow；**BetterDisplay 和 deskflow-ddc 均不是运行依赖**。
@@ -55,7 +56,7 @@ Hammerspoon 需要在 Mac 上授权“辅助功能”，Deskflow 按其官方引
 2. 安装两端 Deskflow，建立左右关系，完成配对，保持修饰键原样。
 3. 按需在 Mac 导入 Hammerspoon 模块，开启辅助功能，合并配置入口并 Reload Config。
 4. 在 Windows 部署助手，**重新采集本机显示布局**，填写实际 Deskflow 电脑名称，核对 DDC 控制值与两键键码。
-5. 从 Windows 本地桌面测试音乐／邮件两方向，确认画面、单双屏和键鼠均正常，再设置登录启动。
+5. 编译无控制台启动器，从 Windows 本地桌面测试音乐／邮件两方向及关闭普通 PowerShell 后的表现，再将启动器设置为登录任务。
 
 不要直接搬用另一台电脑的 `display-layout.json`、Deskflow 完整配置或恢复备份。只换 Mac 时通常可保留原 Windows 布局；更换 Windows、显卡或连接接口时需重新采集。
 
@@ -83,6 +84,9 @@ Mac Hammerspoon ─────────── 处理 Mac 收到的 Ctrl 快�
 windows/
   DisplayHandoff.ps1             模式控制、托盘与状态
   DisplayNative.cs               Windows 显示、DDC 与按键接口
+  DisplayHandoffLauncher.cs      无控制台启动与工作进程退出码传递
+  Start-Worker.ps1               解除控制台关联后加载原控制器
+  Build-Launcher.ps1             使用系统编译器生成启动器
   deskflow-server.template.conf  待填写主机名的 Deskflow 配置
   key-probe/                    媒体键检测工具
 mac/

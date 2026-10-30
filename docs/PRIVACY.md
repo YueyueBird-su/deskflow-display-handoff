@@ -14,6 +14,7 @@
 | `controller-state.json` | 切换阶段、错误和当前活动屏幕信息 | Windows 助手目录 |
 | `controller-log.jsonl` | 模式切换结果、时间、屏幕摘要 | Windows 助手目录 |
 | `media-key-probe.json` | 检测到的媒体功能键、时间、会话编号 | 手动运行按键检测工具的目录 |
+| `launcher.log` | 工作进程编号、启动时间与退出／错误结果 | Windows 助手目录 |
 | `deskflow-server.conf` | 实际部署时填写的电脑名称与规则 | Windows 助手目录 |
 
 助手不记录普通文字输入；媒体键检测器只捕获其声明范围内的媒体／应用启动键。Hammerspoon 对编辑区的识别读取辅助功能元数据，不读取字段文字。

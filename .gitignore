@@ -11,6 +11,10 @@ deskflow-server.conf
 Deskflow.conf
 backup*/
 backups/
+startup-backup*/
+startup-repair.json
+startup-repair-verification.json
+startup-console-probe.json
 *.log
 
 # Credentials / pairing / local environment
@@ -25,6 +29,8 @@ backups/
 *.cer
 known_hosts*
 windows-host-key.txt
+DisplayHandoffLauncher.exe
+DisplayHandoffLauncher.build.exe
 
 # Local tools and generated previews
 .venv/
