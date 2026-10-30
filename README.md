@@ -26,6 +26,7 @@
 - **独立后台启动**：使用没有控制台窗口的启动器，配合登录任务运行；关闭普通 PowerShell 窗口不影响助手，任务可配置异常退出后重试。
 - **Mac Ctrl 别名**：常用 Ctrl 复制、粘贴、撤销、保存、查找等转为对应 Command 组合，提供按词移动／选择和文字编辑增强。
 - **终端排除**：macOS“终端”和 iTerm 保持原快捷键；`Ctrl+Alt+Shift+P` 可暂停／恢复 Mac 映射。
+- **罗技鼠标兼容**：结合 Windows Logi Options+，处理 Mac 浏览器／Finder 侧键、Safari 横滚切标签，以及两端分别执行的窗口／桌面手势。中键和原生滚动保留。
 - **本机运行**：助手没有新增网络监听接口；日常运行无需 SSH 常驻。
 
 ## 要安装的软件
@@ -33,7 +34,8 @@
 | 软件／组件 | 安装在哪 | 用途 | 是否需要另装 |
 |---|---|---|---|
 | [Deskflow](https://github.com/deskflow/deskflow/releases/tag/v1.27.0) | Windows 和 Mac | 共用键鼠、剪贴板及切换键鼠目标 | 是；本配置验证版本为 1.27.0 |
-| [Hammerspoon](https://www.hammerspoon.org/go/) | Mac | 运行 `mac/deskflow_keys.lua`，实现 Ctrl 别名、文字导航和终端排除 | 使用 Mac 快捷键模块时需要 |
+| [Hammerspoon](https://www.hammerspoon.org/go/) | Mac | 运行快捷键及可选鼠标兼容模块 | 使用 Mac 快捷键或鼠标兼容模块时需要 |
+| [Logi Options+](https://www.logitech.com/en-us/software/logi-options-plus) | 连接罗技鼠标的 Windows | 配置物理手势，与可选鼠标兼容模块联动 | 使用罗技手势桥接时需要；验证版本 2.9 |
 | Windows PowerShell 5.1、.NET Framework／Windows Forms 及其 C# 编译器 | Windows | 编译无控制台启动器、运行显示切换助手、调用显示与 DDC 接口 | Windows 自带组件；按说明使用系统编译器，无须另装 Python 或 Visual Studio |
 | 本仓库 Windows 助手 | Windows | 监听两键、切输入源、改变单双屏布局、联动 Deskflow | 按迁移说明部署源码 |
 
@@ -62,6 +64,8 @@ Hammerspoon 需要在 Mac 上授权“辅助功能”，Deskflow 按其官方引
 
 Mac 快捷键列表与暂停方法见 [快捷键说明](docs/SHORTCUTS.md)。
 
+罗技鼠标的侧键、横滚和手势设置见 [Options+ 鼠标兼容说明](docs/MOUSE.md)。这部分是可选扩展；若仅使用显示切换，可不部署 `MouseBridge.cs` 与 `deskflow_mouse.lua`。
+
 ## 原理
 
 ```text
@@ -89,9 +93,12 @@ windows/
   Build-Launcher.ps1             使用系统编译器生成启动器
   deskflow-server.template.conf  待填写主机名的 Deskflow 配置
   key-probe/                    媒体键检测工具
+  MouseBridge.cs                可选的 Windows 本地手势动作
+  Configure-OptionsGestures.ps1  有前置检查与本机备份的 Options+ 配置
 mac/
   deskflow_keys.lua              Ctrl 别名与终端排除
   init.lua                      配置入口示例，合并进已有配置
+  deskflow_mouse.lua             可选的 Mac 鼠标与手势兼容
 docs/                           迁移、快捷键与隐私说明
 assets/demo.gif                 功能示意动画
 tools/render_demo.py             可重新生成 GIF 的绘图脚本

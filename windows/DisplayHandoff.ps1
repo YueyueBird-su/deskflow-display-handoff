@@ -90,7 +90,16 @@ $displayHandoffMutex=[Threading.Mutex]::new($false,'Local\DisplayHandoff')
 if(-not $displayHandoffMutex.WaitOne(0)) {exit}
 $displayHandoffWindow=$null
 $displayHandoffHookTimer=[Windows.Forms.Timer]::new()
+$displayHandoffMouseWindow=$null
 try {
+    if(Test-Path (Join-Path $PSScriptRoot 'MouseBridge.cs')) {
+        try {
+            Add-Type -Path (Join-Path $PSScriptRoot 'MouseBridge.cs') -ReferencedAssemblies System.Windows.Forms,System.Drawing
+            $displayHandoffMouseWindow=[DisplayHandoffMouse.LocalGestures]::new($PSScriptRoot)
+        } catch {
+            [IO.File]::WriteAllText((Join-Path $PSScriptRoot 'mouse-bridge-state.json'),(@{status='failed';registered=0;error=$_.Exception.Message}|ConvertTo-Json),[Text.UTF8Encoding]::new($false))
+        }
+    }
     $displayHandoffWindow=[DisplayHandoff.HotkeyWindow]::new([Action[int]]{
         param($displayHandoffId)
         if($displayHandoffId-eq 1){Invoke-DisplayMode 'Windows'}
@@ -118,5 +127,6 @@ try {
     $displayHandoffHookTimer.Stop();$displayHandoffHookTimer.Dispose()
     if($script:tray){$script:tray.Visible=$false;$script:tray.Dispose()}
     if($displayHandoffWindow){$displayHandoffWindow.Dispose()}
+    if($displayHandoffMouseWindow){$displayHandoffMouseWindow.Dispose()}
     $displayHandoffMutex.ReleaseMutex();$displayHandoffMutex.Dispose()
 }

@@ -15,11 +15,16 @@
 | `controller-log.jsonl` | 模式切换结果、时间、屏幕摘要 | Windows 助手目录 |
 | `media-key-probe.json` | 检测到的媒体功能键、时间、会话编号 | 手动运行按键检测工具的目录 |
 | `launcher.log` | 工作进程编号、启动时间与退出／错误结果 | Windows 助手目录 |
+| `mouse-bridge-state.json` | 注册的手势信号数量、Windows 本地动作计数 | Windows 助手目录 |
+| `mouse-options-installation.json` | Options+ 修改范围、型号、恢复备份位置 | Windows 助手目录 |
+| `mouse-options-backup-*` | Options+ 本机设置数据库备份，可能含账号和设备配置 | Windows 助手目录，仅本机保存 |
 | `deskflow-server.conf` | 实际部署时填写的电脑名称与规则 | Windows 助手目录 |
 
 助手不记录普通文字输入；媒体键检测器只捕获其声明范围内的媒体／应用启动键。Hammerspoon 对编辑区的识别读取辅助功能元数据，不读取字段文字。
 
 本助手没有上传日志或新增网络监听的代码。键鼠与剪贴板传输由独立安装的 Deskflow 按其自身配置完成；Hammerspoon 权限与偏好留在 Mac 本机。
+
+Options+ 配置工具不导出账号或设备设置到仓库；它只在 Windows 本机备份并修改目标手势字段。`.db`、备份目录和鼠标运行状态文件均被忽略。
 
 ## 分享自己的修改
 

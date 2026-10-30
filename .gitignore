@@ -15,6 +15,13 @@ startup-backup*/
 startup-repair.json
 startup-repair-verification.json
 startup-console-probe.json
+mouse-bridge-state.json
+mouse-options-installation.json
+mouse-options-backup*/
+mouse-helper-backup*/
+*.db
+*.db-wal
+*.db-shm
 *.log
 
 # Credentials / pairing / local environment
