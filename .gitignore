@@ -1,0 +1,36 @@
+# Runtime / machine-specific configuration
+display-layout.json
+controller-state.json
+controller-state.json.tmp
+controller-log.jsonl
+media-key-probe.json
+media-key-probe.json.tmp
+installation.json
+function-keys.json
+deskflow-server.conf
+Deskflow.conf
+backup*/
+backups/
+*.log
+
+# Credentials / pairing / local environment
+.env
+.env.*
+.ssh/
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cer
+known_hosts*
+windows-host-key.txt
+
+# Local tools and generated previews
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db
+*-preview.png
+contact-sheet.png
