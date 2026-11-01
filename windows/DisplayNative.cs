@@ -147,6 +147,7 @@ namespace DisplayHandoff {
     public sealed class HotkeyWindow : NativeWindow, IDisposable {
         const int WM_HOTKEY=0x312, WM_MODE=0x8002, WM_REFRESH=0x8003;
         readonly Action<int> callback;
+        readonly int windowsKey, macKey;
         readonly System.Threading.ManualResetEvent hookReady=new System.Threading.ManualResetEvent(false);
         readonly HashSet<int> held=new HashSet<int>();
         delegate IntPtr HookProc(int code,IntPtr message,IntPtr data);
@@ -170,7 +171,11 @@ namespace DisplayHandoff {
         [DllImport("user32.dll")]static extern IntPtr DispatchMessage(ref NativeMessage message);
         [DllImport("kernel32.dll",CharSet=CharSet.Unicode)]static extern IntPtr GetModuleHandle(string name);
         [DllImport("kernel32.dll")]static extern uint GetCurrentThreadId();
-        public HotkeyWindow(Action<int> action) {
+        public HotkeyWindow(Action<int> action) : this(action, 0xB5, 0xB4) { }
+        public HotkeyWindow(Action<int> action, int windowsModeKey, int macModeKey) {
+            if(windowsModeKey<0xB0 || windowsModeKey>0xB7 || macModeKey<0xB0 || macModeKey>0xB7 || windowsModeKey==macModeKey)
+                throw new ArgumentException("Choose two different media/application keys (0xB0 through 0xB7).");
+            windowsKey=windowsModeKey;macKey=macModeKey;
             callback=action;CreateHandle(new CreateParams {Parent=new IntPtr(-3)});
             mediaHandler=OnMedia;
             if(!RegisterHotKey(Handle,1,0x4007,0x83) || !RegisterHotKey(Handle,2,0x4007,0x84)) {
@@ -198,11 +203,11 @@ namespace DisplayHandoff {
         IntPtr OnMedia(int code,IntPtr message,IntPtr data) {
             if(code>=0) {
                 int key=Marshal.ReadInt32(data);
-                // The two physical keys were verified with the user. No text keys are recorded.
-                if(key==0xB5 || key==0xB4) {
+                // Only the two configured media keys. No text keys are recorded.
+                if(key==windowsKey || key==macKey) {
                     int kind=message.ToInt32();
                     if(kind==0x100 || kind==0x104) {
-                        if(held.Add(key))PostMessage(Handle,WM_MODE,new IntPtr(key==0xB5?1:2),IntPtr.Zero);
+                        if(held.Add(key))PostMessage(Handle,WM_MODE,new IntPtr(key==windowsKey?1:2),IntPtr.Zero);
                         return new IntPtr(1);
                     }
                     if(kind==0x101 || kind==0x105){held.Remove(key);return new IntPtr(1);}

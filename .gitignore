@@ -47,3 +47,12 @@ __pycache__/
 Thumbs.db
 *-preview.png
 contact-sheet.png
+
+# Experimental app build / local setup state
+dist/
+build/
+handoff-settings.json
+setup-installation.json
+setup-installation.restored.json
+setup-backup/
+*.app/

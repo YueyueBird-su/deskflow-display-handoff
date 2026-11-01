@@ -50,7 +50,11 @@ $mouseQuoted='"'+$mouseAgentPath+'"'
 if($mouseAgentCommand.StartsWith($mouseQuoted,[StringComparison]::OrdinalIgnoreCase)){$mouseArguments=$mouseAgentCommand.Substring($mouseQuoted.Length).Trim()}
 elseif($mouseAgentCommand.StartsWith($mouseAgentPath,[StringComparison]::OrdinalIgnoreCase)){$mouseArguments=$mouseAgentCommand.Substring($mouseAgentPath.Length).Trim()}
 else{throw 'Could not preserve the existing Logi agent launch arguments.'}
-$mouseTask=Get-ScheduledTask -TaskName 'DisplayHandoff'
+$mouseTask=@(Get-ScheduledTask -TaskName DisplayHandoff,DisplayHandoffApp -ErrorAction SilentlyContinue|Where-Object {
+    $_.Actions.Count-eq 1 -and $_.Actions[0].Execute-eq (Join-Path $mouseRoot 'DisplayHandoffLauncher.exe')
+})
+if($mouseTask.Count-ne 1){throw 'Expected one helper task pointing to this installation.'}
+$mouseTask=$mouseTask[0]
 $mouseAction=if($mouseArguments){New-ScheduledTaskAction -Execute $mouseAgentPath -Argument $mouseArguments}else{New-ScheduledTaskAction -Execute $mouseAgentPath}
 if(-not $mouseExistingTask){Register-ScheduledTask -TaskName $mouseTaskName -Action $mouseAction -Principal $mouseTask.Principal -Settings (New-ScheduledTaskSettingsSet -ExecutionTimeLimit ([TimeSpan]::Zero) -MultipleInstances IgnoreNew)|Out-Null}
 try {
@@ -65,6 +69,7 @@ try {
     if($mouseRunning.Count-eq 0){Start-ScheduledTask -TaskName $mouseTaskName}
     $mouseDeadline=[DateTimeOffset]::Now.AddSeconds(15)
     do{Start-Sleep -Milliseconds 300;$mouseRunning=@(Get-CimInstance Win32_Process|Where-Object {$_.ExecutablePath-eq $mouseAgentPath -and $_.SessionId-eq $mouseAgent[0].SessionId});if($mouseRunning.Count-eq 1){break};if([DateTimeOffset]::Now-gt $mouseDeadline){throw 'Logi Options+ agent did not restart.'}}while($true)
+    if(-not $mouseExistingTask){Unregister-ScheduledTask -TaskName $mouseTaskName -Confirm:$false}
 }
 $mouseRecord=@{status='configured';backup=$mouseBackup;signals=$mouseSignals;model=$Model;changed='Only selected mouse custom gestures and preset selection';agentPid=$mouseRunning[0].ProcessId;agentSession=$mouseRunning[0].SessionId}
 [IO.File]::WriteAllText((Join-Path $mouseRoot 'mouse-options-installation.json'),($mouseRecord|ConvertTo-Json -Depth 6),[Text.UTF8Encoding]::new($false))

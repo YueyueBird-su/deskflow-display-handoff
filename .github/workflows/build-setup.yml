@@ -1,0 +1,46 @@
+name: Build experimental setup apps
+on:
+  workflow_dispatch:
+  push:
+    branches: [codex/setup-app]
+  pull_request:
+    paths: ['app/**', 'windows/**', 'mac/**', 'tests/**', '.github/workflows/build-setup.yml']
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test config and native compilation
+        shell: powershell
+        run: ./tests/Test-Windows.ps1
+      - name: Test installer transaction with isolated fixtures
+        shell: powershell
+        run: ./tests/Test-WindowsTransaction.ps1
+      - name: Build single EXE
+        shell: powershell
+        run: |
+          ./app/windows/Build.ps1
+          $p = Start-Process ./dist/DisplayHandoffSetup.exe -ArgumentList '--verify-payload',"$env:RUNNER_TEMP/payload-check.json" -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw 'Payload verification failed' }
+          Get-Content "$env:RUNNER_TEMP/payload-check.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: DisplayHandoffSetup-Windows-experimental
+          path: dist/DisplayHandoffSetup.exe
+  mac:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test isolated installation and restore
+        run: |
+          mkdir -p dist/swift-cache
+          xcrun swiftc -swift-version 5 -parse-as-library -module-cache-path dist/swift-cache app/mac/SetupCore.swift tests/MacSetupTests.swift -o dist/mac-setup-tests
+          dist/mac-setup-tests
+      - name: Build universal Mac app
+        run: bash app/mac/build.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: DisplayHandoffSetup-Mac-experimental
+          path: dist/DisplayHandoffSetup-mac-universal.zip

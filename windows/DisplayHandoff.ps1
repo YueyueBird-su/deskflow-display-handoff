@@ -11,6 +11,20 @@ if([Diagnostics.Process]::GetCurrentProcess().SessionId -ne [DisplayHandoff.Nati
 }
 $script:layoutPath=Join-Path $PSScriptRoot 'display-layout.json'
 $script:layout=Get-Content $script:layoutPath -Raw|ConvertFrom-Json
+$script:config=@{windowsInput=15;macInput=17;windowsKey=181;macKey=180;enableMouse=$true}
+$displayHandoffConfigFile=Join-Path $PSScriptRoot 'handoff-settings.json'
+if(Test-Path $displayHandoffConfigFile) {
+    $displayHandoffSettings=Get-Content $displayHandoffConfigFile -Raw|ConvertFrom-Json
+    foreach($displayHandoffName in @('windowsInput','macInput','windowsKey','macKey')) {
+        $displayHandoffRaw=$displayHandoffSettings.$displayHandoffName
+        if($null-eq $displayHandoffRaw -or $displayHandoffRaw -isnot [ValueType] -or [double]$displayHandoffRaw -ne [int]$displayHandoffRaw){throw 'Invalid numeric handoff setting.'}
+        $script:config[$displayHandoffName]=[int]$displayHandoffRaw
+    }
+    if($displayHandoffSettings.schema-ne 1 -or $displayHandoffSettings.enableMouse -isnot [bool]){throw 'Unsupported handoff settings schema.'}
+    $script:config.enableMouse=$displayHandoffSettings.enableMouse
+    if($script:config.windowsInput-lt 1 -or $script:config.windowsInput-gt 255 -or $script:config.macInput-lt 1 -or $script:config.macInput-gt 255 -or $script:config.windowsInput-eq $script:config.macInput){throw 'Choose distinct DDC input values from 1 to 255.'}
+    if($script:config.windowsKey-lt 176 -or $script:config.windowsKey-gt 183 -or $script:config.macKey-lt 176 -or $script:config.macKey-gt 183 -or $script:config.windowsKey-eq $script:config.macKey){throw 'Choose two different media keys.'}
+}
 $script:statePath=Join-Path $PSScriptRoot 'controller-state.json'
 $script:logPath=Join-Path $PSScriptRoot 'controller-log.jsonl'
 $script:tray=$null
@@ -67,7 +81,7 @@ function Invoke-DisplayMode([string]$Target) {
             [DisplayHandoff.Native]::ApplyRight($displayHandoffPair.right.Device,$script:layout.right.Mode,$false)
             $displayHandoffPair=Wait-Topology $true
         }
-        $displayHandoffValue=if($Target-eq 'Windows'){15}else{17}
+        $displayHandoffValue=if($Target-eq 'Windows'){$script:config.windowsInput}else{$script:config.macInput}
         $displayHandoffRead=[DisplayHandoff.Native]::Input($displayHandoffPair.right.Device,$displayHandoffValue)
         if(($displayHandoffRead-band 255)-ne $displayHandoffValue){throw 'The monitor did not confirm the selected input.'}
         if($Target-eq 'Mac') {
@@ -92,7 +106,7 @@ $displayHandoffWindow=$null
 $displayHandoffHookTimer=[Windows.Forms.Timer]::new()
 $displayHandoffMouseWindow=$null
 try {
-    if(Test-Path (Join-Path $PSScriptRoot 'MouseBridge.cs')) {
+    if($script:config.enableMouse -and (Test-Path (Join-Path $PSScriptRoot 'MouseBridge.cs'))) {
         try {
             Add-Type -Path (Join-Path $PSScriptRoot 'MouseBridge.cs') -ReferencedAssemblies System.Windows.Forms,System.Drawing
             $displayHandoffMouseWindow=[DisplayHandoffMouse.LocalGestures]::new($PSScriptRoot)
@@ -104,14 +118,14 @@ try {
         param($displayHandoffId)
         if($displayHandoffId-eq 1){Invoke-DisplayMode 'Windows'}
         elseif($displayHandoffId-eq 2){Invoke-DisplayMode 'Mac'}
-    })
+    },$script:config.windowsKey,$script:config.macKey)
     $script:tray=[Windows.Forms.NotifyIcon]::new()
     $script:tray.Icon=[Drawing.SystemIcons]::Application
     $script:tray.Text='双屏切换：已就绪'
     $displayHandoffMenu=[Windows.Forms.ContextMenuStrip]::new()
-    $displayHandoffWindowsItem=$displayHandoffMenu.Items.Add('音乐键：Windows 扩展双屏')
+    $displayHandoffWindowsItem=$displayHandoffMenu.Items.Add('Windows 扩展双屏')
     $displayHandoffWindowsItem.add_Click({Invoke-DisplayMode 'Windows'})
-    $displayHandoffMacItem=$displayHandoffMenu.Items.Add('邮件键：左 Windows / 右 Mac')
+    $displayHandoffMacItem=$displayHandoffMenu.Items.Add('左 Windows / 右 Mac')
     $displayHandoffMacItem.add_Click({Invoke-DisplayMode 'Mac'})
     $null=$displayHandoffMenu.Items.Add('-')
     $displayHandoffExitItem=$displayHandoffMenu.Items.Add('退出切换助手')

@@ -4,6 +4,14 @@
 
 在原版 Deskflow 上增加显示器输入源、Windows 显示布局与键鼠去向联动，并提供可独立使用的 Mac Windows 风格快捷键模块。
 
+## 软件化实验分支
+
+`codex/setup-app` 新增可构建的 **Windows 安装 EXE** 和 **Mac 配置 .app**：用界面检测设备、生成配置、安装备份并撤销，减少复制脚本、修改路径和手建 Windows 登录任务的操作。
+
+这是第一版配置助手，运行仍使用 Deskflow、Hammerspoon 和原有后台模块。两端配对、系统权限、接线与 DDC 输入源核对仍需完成，不会自动接管已有的日常安装。
+
+**[试用、构建与验证范围](docs/APP.md)** · [Actions 构建下载](https://github.com/YueyueBird-su/deskflow-display-handoff/actions/workflows/build-setup.yml)
+
 ![音乐键进入 Windows 扩展双屏，邮件键恢复左 Windows、右 Mac，键鼠同时切换](assets/demo.gif)
 
 > 上图为程序绘制的功能示意动画，使用通用标签；它不是桌面录屏。实际切换速度取决于显示器和显卡。
@@ -37,7 +45,7 @@
 | [Hammerspoon](https://www.hammerspoon.org/go/) | Mac | 运行快捷键及可选鼠标兼容模块 | 使用 Mac 快捷键或鼠标兼容模块时需要 |
 | [Logi Options+](https://www.logitech.com/en-us/software/logi-options-plus) | 连接罗技鼠标的 Windows | 配置物理手势，与可选鼠标兼容模块联动 | 使用罗技手势桥接时需要；验证版本 2.9 |
 | Windows PowerShell 5.1、.NET Framework／Windows Forms 及其 C# 编译器 | Windows | 编译无控制台启动器、运行显示切换助手、调用显示与 DDC 接口 | Windows 自带组件；按说明使用系统编译器，无须另装 Python 或 Visual Studio |
-| 本仓库 Windows 助手 | Windows | 监听两键、切输入源、改变单双屏布局、联动 Deskflow | 按迁移说明部署源码 |
+| 本仓库 Windows 助手 | Windows | 监听两键、切输入源、改变单双屏布局、联动 Deskflow | 实验分支可用安装向导，也可按迁移说明部署源码 |
 
 Hammerspoon 需要在 Mac 上授权“辅助功能”，Deskflow 按其官方引导完成系统权限与两端配对。这里沿用原版 Deskflow；**BetterDisplay 和 deskflow-ddc 均不是运行依赖**。
 
@@ -52,7 +60,7 @@ Hammerspoon 需要在 Mac 上授权“辅助功能”，Deskflow 按其官方引
 
 ## 安装与迁移
 
-**完整步骤见 [迁移说明](docs/MIGRATION.md)。** 该仓库提供配置源码与模板，需要在目标机器完成设置。
+**图形向导见 [软件试用说明](docs/APP.md)；原手工方式见 [迁移说明](docs/MIGRATION.md)。** 两种方式都需要在目标机器核对硬件与配对信息。
 
 1. 先手动验证两种画面：Windows 左右扩展双屏，以及左 Windows／右 Mac。
 2. 安装两端 Deskflow，建立左右关系，完成配对，保持修饰键原样。
